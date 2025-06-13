@@ -6,14 +6,34 @@ import (
 	"os"
 	"time"
 
-	"github.com/YOUR-USER-OR-ORG-NAME/YOUR-REPO-NAME/internal/pkg/db"
+	"github.com/TEST/NEW/internal/pkg/db"
+	"github.com/TEST/NEW/internal/pkg/redis"
 	"github.com/joho/godotenv"
 )
 
 func main() {
+
+	if err := godotenv.Load(".env"); err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
 	_ = godotenv.Load(".env")
 	db.ConnectDatabase()
 
+	if err := redis.InitRedis(); err != nil {
+		log.Fatalf(" Redis initialization failed: %v", err)
+	}
+
+	err := redis.Rdb.Set(redis.Ctx, "startup_key", "Redis is connected", 0).Err()
+	if err != nil {
+		log.Fatalf(" Failed to write test Redis key: %v", err)
+	}
+	val, err := redis.Rdb.Get(redis.Ctx, "startup_key").Result()
+	if err != nil {
+		log.Fatalf(" Failed to read test Redis key: %v", err)
+	}
+
+	log.Println(" Redis test value:", val)
 	port := os.Getenv("PORT")
 
 	if port == "" {
